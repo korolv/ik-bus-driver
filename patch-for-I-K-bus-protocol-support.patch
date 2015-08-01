@@ -1,0 +1,70 @@
+From: Vladimir Korol <vovabox@mail.ru>
+Date: Tue, 5 May 2015 01:00:00 +0600
+Subject: [PATCH 1/2] patch for I/K-bus protocol support
+
+---
+ include/linux/socket.h        | 4 +++-
+ include/uapi/linux/if_arp.h   | 1 +
+ include/uapi/linux/if_ether.h | 1 +
+ include/uapi/linux/tty.h      | 1 +
+ 4 files changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/include/linux/socket.h b/include/linux/socket.h
+index bb9b836..37f79c1 100644
+--- a/include/linux/socket.h
++++ b/include/linux/socket.h
+@@ -180,7 +180,8 @@ struct ucred {
+ #define AF_ALG		38	/* Algorithm sockets		*/
+ #define AF_NFC		39	/* NFC sockets			*/
+ #define AF_VSOCK	40	/* vSockets			*/
+-#define AF_MAX		41	/* For now.. */
++#define AF_IBUS		41	/* Instrumentation bus BMW */
++#define AF_MAX		42	/* For now.. */
+ 
+ /* Protocol families, same as address families. */
+ #define PF_UNSPEC	AF_UNSPEC
+@@ -225,6 +226,7 @@ struct ucred {
+ #define PF_ALG		AF_ALG
+ #define PF_NFC		AF_NFC
+ #define PF_VSOCK	AF_VSOCK
++#define PF_IBUS		AF_IBUS
+ #define PF_MAX		AF_MAX
+ 
+ /* Maximum queue length specifiable by listen.  */
+diff --git a/include/uapi/linux/if_arp.h b/include/uapi/linux/if_arp.h
+index 4d024d7..0e48f31 100644
+--- a/include/uapi/linux/if_arp.h
++++ b/include/uapi/linux/if_arp.h
+@@ -53,6 +53,7 @@
+ #define ARPHRD_X25	271		/* CCITT X.25			*/
+ #define ARPHRD_HWX25	272		/* Boards with X.25 in firmware	*/
+ #define ARPHRD_CAN	280		/* Controller Area Network      */
++#define ARPHRD_IBUS	281		/* Instrumentation communication bus */
+ #define ARPHRD_PPP	512
+ #define ARPHRD_CISCO	513		/* Cisco HDLC	 		*/
+ #define ARPHRD_HDLC	ARPHRD_CISCO
+diff --git a/include/uapi/linux/if_ether.h b/include/uapi/linux/if_ether.h
+index aa63ed0..933461e 100644
+--- a/include/uapi/linux/if_ether.h
++++ b/include/uapi/linux/if_ether.h
+@@ -115,6 +115,7 @@
+ #define ETH_P_LOCALTALK 0x0009		/* Localtalk pseudo type 	*/
+ #define ETH_P_CAN	0x000C		/* CAN: Controller Area Network */
+ #define ETH_P_CANFD	0x000D		/* CANFD: CAN flexible data rate*/
++#define ETH_P_IBUS	0x000E		/* IBUS: Instrumentation communication bus */
+ #define ETH_P_PPPTALK	0x0010		/* Dummy type for Atalk over PPP*/
+ #define ETH_P_TR_802_2	0x0011		/* 802.2 frames 		*/
+ #define ETH_P_MOBITEX	0x0015		/* Mobitex (kaz@cafe.net)	*/
+diff --git a/include/uapi/linux/tty.h b/include/uapi/linux/tty.h
+index dac199a..7f28b26 100644
+--- a/include/uapi/linux/tty.h
++++ b/include/uapi/linux/tty.h
+@@ -34,5 +34,6 @@
+ #define N_TI_WL		22	/* for TI's WL BT, FM, GPS combo chips */
+ #define N_TRACESINK	23	/* Trace data routing for MIPI P1149.7 */
+ #define N_TRACEROUTER	24	/* Trace data routing for MIPI P1149.7 */
++#define N_SLIBUS	25	/* Instrumentation communication bus */
+ 
+ #endif /* _UAPI_LINUX_TTY_H */
+-- 
+
