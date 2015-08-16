@@ -61,7 +61,7 @@ static int ibus_tx_try = 3; /* default number of try retransmit */
 module_param(maxdev, int, 0);
 MODULE_PARM_DESC(maxdev, "Maximum number of I/K bus interfaces");
 module_param(ibus_tx_try, int, 0);
-MODULE_PARM_DESC(ibus_tx_try, "Baudrate of LIN interface");
+MODULE_PARM_DESC(ibus_tx_try, "Number of retransmit attempts");
 
 struct slibus {
 	int         magic;
