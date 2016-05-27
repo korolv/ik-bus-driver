@@ -1,0 +1,35 @@
+diff --git a/drivers/net/Makefile b/drivers/net/Makefile
+index 900b0c5..1f4f8e1 100644
+--- a/drivers/net/Makefile
++++ b/drivers/net/Makefile
+@@ -59,6 +59,7 @@ obj-$(CONFIG_WAN) += wan/
+ obj-$(CONFIG_WLAN) += wireless/
+ obj-$(CONFIG_WIMAX) += wimax/
+ obj-$(CONFIG_IEEE802154) += ieee802154/
++obj-$(CONFIG_IBUS) += ibus/
+ 
+ obj-$(CONFIG_VMXNET3) += vmxnet3/
+ obj-$(CONFIG_XEN_NETDEV_FRONTEND) += xen-netfront.o
+diff --git a/include/uapi/linux/tty.h b/include/uapi/linux/tty.h
+index 01c4410..84b9f15 100644
+--- a/include/uapi/linux/tty.h
++++ b/include/uapi/linux/tty.h
+@@ -35,5 +35,6 @@
+ #define N_TRACESINK	23	/* Trace data routing for MIPI P1149.7 */
+ #define N_TRACEROUTER	24	/* Trace data routing for MIPI P1149.7 */
+ #define N_NCI		25	/* NFC NCI UART */
++#define N_SLIBUS	26	/* Instrumental communication bus */
+ 
+ #endif /* _UAPI_LINUX_TTY_H */
+diff --git a/net/ibus/Kconfig b/net/ibus/Kconfig
+index 30054c5..75a62a2 100644
+--- a/net/ibus/Kconfig
++++ b/net/ibus/Kconfig
+@@ -12,3 +12,7 @@ config IBUS
+ 
+ 	  If you want I/K-bus support you should say Y here and also
+ 	  to the specific driver for your controller(s) below.
++
++if IBUS
++source "drivers/net/ibus/Kconfig"
++endif

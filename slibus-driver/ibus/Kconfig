@@ -1,0 +1,10 @@
+menu "I/K-bus device drivers"
+
+config IBUS_SLIBUS
+	tristate "I/K serial line net device"
+	depends on TTY
+	---help---
+	  I/K-bus driver for serial interface that are attached via serial
+	  lines.
+
+endmenu

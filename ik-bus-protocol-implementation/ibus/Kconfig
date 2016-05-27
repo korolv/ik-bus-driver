@@ -1,0 +1,14 @@
+#
+# Instrumentation and body communication buses (I and K bus)
+#
+
+config IBUS
+	depends on NET
+	tristate "I/K-bus"
+	---help---
+	  Instrumentation and body buses are a communication bus for
+	  BMW automotive. It is a half-duplex area network connected 
+	  control units over one wire.
+
+	  If you want I/K-bus support you should say Y here and also
+	  to the specific driver for your controller(s) below.

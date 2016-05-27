@@ -1,9 +1,10 @@
 /*
  * slibus.c - serial communication bus interface driver (using tty line 
- * discipline). Instrumentation and Body bus (I and K bus) are network to 
+ * discipline). Information and Body bus (I and K bus) are network to 
  * interconnect control units in BMW vehicles.
  *
  * This file is derived from drivers/net/can/slcan.c
+ * slcan.c Author: Oliver Hartkopp <socketcan@hartkopp.net>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -17,8 +18,25 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program; if not, write to the Free Software Foundation, Inc.,
- * 59 Temple Place, Suite 330, Boston, MA 02111-1307.
- * 
+ * 59 Temple Place, Suite 330, Boston, MA 02111-1307. You can also get it
+ * at http://www.gnu.org/licenses/gpl.html
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+ * DAMAGE.
+ *
+ * Idea:       Oliver Hartkopp <oliver.hartkopp@volkswagen.de>
+ * Copyright:  (c) 2015 Vladimir Korol
+ * Author:     Vladimir Korol <vovabox@mail.ru>
  */
 #include <linux/module.h>
 #include <linux/moduleparam.h>
@@ -42,26 +60,24 @@ static __initdata const char banner[] =
 	KERN_INFO "slibus: I/K serial communications bus driver\n";
 
 MODULE_DESCRIPTION("serial line I/K bus interface");
-MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Vladimir Korol <vovabox@mail.ru>");
 
 #define SLIBUS_MAGIC           0x53CA
 #define IBUS_BUADRATE           9600
 #define IBUS_RX_BUFFER_SIZE     512
 #define IBUS_TX_BUFFER_SIZE     512
-#define IBUS_TX_TRY             3
-#define IBUS_GP_CHAR_TIMEOUT    9
+#define IBUS_TX_TRY             1
+#define IBUS_GP_CHAR_TIMEOUT    21
 #define IBUS_TX_CHAR_TIMEOUT    51
-#define IBUS_RX_CHAR_TIMEOUT    23
+#define IBUS_RX_CHAR_TIMEOUT    47
 
 static int maxdev = 10;    /* MAX number of SLLIN channels;
 				   This can be overridden with
 				   insmod slibus.ko maxdev=nnn	*/
-static int ibus_tx_try = 3; /* default number of try retransmit */
+static int ibus_tx_try = IBUS_TX_TRY; /* default number of try retransmit */
 module_param(maxdev, int, 0);
 MODULE_PARM_DESC(maxdev, "Maximum number of I/K bus interfaces");
 module_param(ibus_tx_try, int, 0);
-MODULE_PARM_DESC(ibus_tx_try, "Number of retransmit attempts");
+MODULE_PARM_DESC(ibus_tx_try, "Baudrate of LIN interface");
 
 struct slibus {
 	int         magic;
@@ -99,7 +115,7 @@ struct slibus {
 };
 
 static struct net_device **slibus_devs;
-static unsigned long ibus_char_period;
+static u64 ibus_char_period;
 
 /* Start timer for different timeout */
 static inline void sli_timer_start(struct hrtimer *timer, 
@@ -392,13 +408,16 @@ static void slibus_receive_buf(struct tty_struct *tty,
 	}
 	/* There is length of the frame */
 	if (sl->rcount > 1) len = sl->rhead[1] + 2;
-	
+
 	/* Incorrect frame length */
 	if (len > IBUS_MAX_FRAME_SIZE) {
 		sl->dev->stats.rx_dropped++;
 		sl->rcount = 0;
 		sl->rhead = sl->rbuff;
 		sl->tty->ops->flush_chars(sl->tty);
+		clear_bit(SLF_BUS_BUSY, &sl->flags);
+		clear_bit(SLF_RECEIVING, &sl->flags);
+		wake_up(&sl->tx_wq);
 		return;
 	}
 
@@ -413,6 +432,9 @@ static void slibus_receive_buf(struct tty_struct *tty,
 
 			sl->rhead = sl->rbuff;
 			sl->rcount = 0;
+			clear_bit(SLF_BUS_BUSY, &sl->flags);
+			clear_bit(SLF_RECEIVING, &sl->flags);
+			wake_up(&sl->tx_wq);
 		}
 		else {
 			int next_len;
@@ -431,8 +453,6 @@ static void slibus_receive_buf(struct tty_struct *tty,
 			}
 
 		}
-		/* Reset buff */
-		//sl->rcount = 0;
 		return;
 	}
 
@@ -601,7 +621,7 @@ static int slibus_open(struct tty_struct *tty)
 		sltty_configure_port(tty, IBUS_BUADRATE);
 
 		/* nanoseconds per character = bits_per_char / buadrate */
-		ibus_char_period = 1000000000l * 11 / IBUS_BUADRATE;
+		ibus_char_period = (u64)1000000000 * 11 / IBUS_BUADRATE;
 
 		/* Set up receiver timeout */
 		hrtimer_init(&sl->rx_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
@@ -800,3 +820,5 @@ static void __exit slibus_exit(void)
 
 module_init(slibus_init);
 module_exit(slibus_exit);
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Vladimir Korol <vovabox@mail.ru>");

@@ -2,10 +2,12 @@
  * af_ibus_raw.c - implements raw sockets of I/K bus protocol family.
  *
  * This file is derived from /net/can/af_can.c, /net/can/raw.c
+ * slcan.c Author: Oliver Hartkopp <socketcan@hartkopp.net>
  *
  * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License version 2 
- * as published by the Free Software Foundation.
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
  * This program is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -14,8 +16,25 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program; if not, write to the Free Software Foundation, Inc.,
- * 59 Temple Place, Suite 330, Boston, MA 02111-1307.
- * 
+ * 59 Temple Place, Suite 330, Boston, MA 02111-1307. You can also get it
+ * at http://www.gnu.org/licenses/gpl.html
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+ * DAMAGE.
+ *
+ * Idea:       Volkswagen Group Electronic Research
+ * Copyright:  (c) 2015 Vladimir Korol
+ * Author:     Vladimir Korol <vovabox@mail.ru>
  */
 
 #include <linux/module.h>
@@ -38,12 +57,9 @@
 #include <linux/uio.h>
 #include <linux/ibus.h>
 
-static __initconst const char banner[] =
-	KERN_INFO "ibus_raw: raw protocol for I/K communication bus\n";
-
 MODULE_ALIAS_NETPROTO(PF_IBUS);
 MODULE_DESCRIPTION("raw protocol I/K bus");
-MODULE_LICENSE("GPL v2");
+MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Vladimir Korol <vovabox@mail.ru>");
 
 /* per device receive filters linked at dev->ml_priv */
@@ -128,7 +144,6 @@ static int ibus_sk_notifier(struct notifier_block *nb, unsigned long msg,
 
 	return NOTIFY_DONE;
 }
-
 
 static int ibus_proto_init(struct sock *sk)
 {
@@ -645,8 +660,7 @@ static int ibus_getsockopt(struct socket *sock, int level, int optname,
 	return 0;
 }
 
-static int ibus_sendmsg(struct kiocb *iocb, struct socket *sock,
-		       struct msghdr *msg, size_t size)
+static int ibus_sendmsg(struct socket *sock, struct msghdr *msg, size_t size)
 {
 	struct sock *sk = sock->sk;
 	struct ibus_sock *ibo = (struct ibus_sock *)sk;
@@ -684,7 +698,7 @@ static int ibus_sendmsg(struct kiocb *iocb, struct socket *sock,
 	if (!skb)
 		goto put_dev;
 
-	err = memcpy_fromiovec(skb_put(skb, size), msg->msg_iov, size);
+	err = memcpy_from_msg(skb_put(skb, size), msg, size);
 	if (err < 0)
 		goto free_skb;
 
@@ -736,8 +750,8 @@ put_dev:
 	return err;
 }
 
-static int ibus_recvmsg(struct kiocb *iocb, struct socket *sock,
-		       struct msghdr *msg, size_t size, int flags)
+static int ibus_recvmsg(struct socket *sock, struct msghdr *msg, size_t size,
+		       int flags)
 {
 	struct sock *sk = sock->sk;
 	struct sk_buff *skb;
@@ -756,7 +770,7 @@ static int ibus_recvmsg(struct kiocb *iocb, struct socket *sock,
 	else
 		size = skb->len;
 
-	err = memcpy_toiovec(msg->msg_iov, skb->data, size);
+	err = memcpy_to_msg(msg, skb->data, size);
 	if (err < 0) {
 		skb_free_datagram(sk, skb);
 		return err;
@@ -823,7 +837,7 @@ static int ibus_create(struct net *net, struct socket *sock, int protocol,
 
 	sock->ops = &ibus_proto_ops;
 
-	sk = sk_alloc(net, PF_IBUS, GFP_KERNEL, &ibus_proto);
+	sk = sk_alloc(net, PF_IBUS, GFP_KERNEL, &ibus_proto, kern);
 	if (!sk)
 		return -ENOMEM;
 
@@ -1005,7 +1019,7 @@ static int __init ibus_init(void)
 	register_netdevice_notifier(&ibus_netdev_notifier);
 	dev_add_pack(&ibus_packet);
 
-	printk(KERN_INFO "module loaded\n");
+	pr_info("module loaded\n");
 	return 0;
 }
 
@@ -1042,3 +1056,5 @@ static void __exit ibus_exit(void)
 
 module_init(ibus_init);
 module_exit(ibus_exit);
+MODULE_AUTHOR("Vladimir Korol");
+MODULE_LICENSE("GPL v2");
