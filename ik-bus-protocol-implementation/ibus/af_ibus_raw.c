@@ -702,7 +702,7 @@ static int ibus_sendmsg(struct socket *sock, struct msghdr *msg, size_t size)
 	if (err < 0)
 		goto free_skb;
 
-	sock_tx_timestamp(sk, &skb_shinfo(skb)->tx_flags);
+	sock_tx_timestamp(sk, sk->sk_tsflags, &skb_shinfo(skb)->tx_flags);
 
 	skb->dev = dev;
 	frame_len = (int)skb->data[1];

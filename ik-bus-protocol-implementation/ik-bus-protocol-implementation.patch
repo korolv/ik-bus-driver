@@ -1,21 +1,21 @@
 diff --git a/net/Kconfig b/net/Kconfig
-index 127da94..bf21c84 100644
+index 7b6cd34..59a25fc 100644
 --- a/net/Kconfig
 +++ b/net/Kconfig
-@@ -383,6 +383,8 @@ config LWTUNNEL
- 	  weight tunnel endpoint. Tunnel encapsulation parameters are stored
- 	  with light weight tunnel state associated with fib routes.
+@@ -422,6 +422,8 @@ config MAY_USE_DEVLINK
+ 	  on MAY_USE_DEVLINK to ensure they do not cause link errors when
+ 	  devlink is a loadable module and the driver using it is built-in.
  
 +source "net/ibus/Kconfig"
 +
  endif   # if NET
  
- # Used by archs to tell that they support BPF_JIT
+ # Used by archs to tell that they support BPF JIT compiler plus which flavour.
 diff --git a/net/Makefile b/net/Makefile
-index a5d0409..b37e91f 100644
+index 4cafaa2..6ebcd12 100644
 --- a/net/Makefile
 +++ b/net/Makefile
-@@ -38,6 +38,7 @@ obj-$(CONFIG_ATM)		+= atm/
+@@ -40,6 +40,7 @@ obj-$(CONFIG_ATM)		+= atm/
  obj-$(CONFIG_L2TP)		+= l2tp/
  obj-$(CONFIG_DECNET)		+= decnet/
  obj-$(CONFIG_PHONET)		+= phonet/
